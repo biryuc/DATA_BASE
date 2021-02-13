@@ -4,14 +4,16 @@ CREATE table Users(
 uname varchar(30),
 ulogin varchar(30),
 uemail varchar(30),
-udepartment varchar(30) CHECK (udepartment in ('Production', 'Support', 'bookkeeping', 'Administration'))
+udepartment varchar(30) CHECK (udepartment in ('Production', 'Support', 'bookkeeping', 'Administration')),
+primary key (ulogin)
 );
 
 CREATE table project(
 pname varchar(30),
 pcommit text,
 pstart timestamp(30) ,
-pend timestamp(30)
+pend timestamp(30),
+primary key (pname)
 );
 
 CREATE table tasks(
@@ -24,7 +26,12 @@ trealtime int,
 tproject varchar(30),
 tcreator varchar(30),
 tstart DATE,
-tresponsible varchar(30)
+tresponsible varchar(30),
+ID int,
+primary key (ttitle),
+FOREIGN KEY (tproject) REFERENCES project (pname),
+FOREIGN KEY (tcreator) REFERENCES Users (ulogin),
+FOREIGN KEY (tresponsible) REFERENCES Users (ulogin)
 );
 
 
@@ -46,22 +53,22 @@ VALUES ('РТК', '2016/01/31', NULL),
        ('МВД-Онлайн', '2015/05/22', '2016/01/31'),
        ('Поддержка', '2016/06/07', NULL);
 
-INSERT INTO tasks(tproject, ttitle, tpriority, tstate, tcreator, tresponsible, tstart, tspent, trealtime)
-VALUES ('Поддержка', 'Task1', 20, 'new', 'a.berkut', 's.petrova', NULL, 10, 15),
-		('Поддержка', 'Task2', 100, 'new', 'a.makenroy', 's.petrova', NULL, 12, 12),
-       ('Демо-Сибирь', 'Task3', 200, 'new', 'v.belova', 's.petrova', NULL, 52, 22),
-       ('РТК', 'Task4', 300, 'new', 'a.makenroy', 's.petrova', NULL, 12, 12),
-       ('Демо-Сибирь', 'Task5', 10, 'new', 'v.ivanova', 'a.makenroy', NULL, 1, 100),
-       ('МВД-Онлайн', 'Task6', 400, 'new', 'a.berkut', 'f.drozdov', NULL, 12, 22),
-       ('РТК', 'Task7', 500, 'new', 'a.makenroy', 'v.belova', NULL, 22, 35),
-       ('Демо-Сибирь', 'Task8', 100, 'new', 'a.makenroy', 's.petrova', NULL, 94, 12),
-       ('МВД-Онлайн', 'Task9', 900, 'new', 'v.ivanova', 'f.drozdov', NULL, 88, 24),
-       ('Демо-Сибирь', 'Task10', 30, 'new', 'a.makenroy', NULL, '2015/1/1', 99, 2),
-       ('РТК', 'Task11', 1000, 'new', 'v.ivanova', 'a.berkut', '2016/4/1', NULL, NULL),
-       ('Демо-Сибирь', 'Task12', 50, 'new', 'a.makenroy', 'a.makenroy', '2015/8/1', 66, 32),
-       ('СС.Контент', 'Task13', 1, 'new', 'a.makenroy', 'a.kasatkin', '2016/1/3', 99, 2),
-       ('СС.Контент', 'Task14', 20, 'new', 'a.makenroy', 'a.kasatkin', '2016/1/1', 22, 3),
-       ('СС.Контент', 'Task15', 20, 'new', 'a.makenroy', 'a.kasatkin', '2016/1/2', NULL, NULL);
+INSERT INTO tasks(ID,tproject, ttitle, tpriority, tstate, tcreator, tresponsible, tstart, tspent, trealtime)
+VALUES (1,'Поддержка', 'Task1', 20, 'new', 'a.berkut', 's.petrova', NULL, 10, 15),
+		(2,'Поддержка', 'Task2', 100, 'new', 'a.makenroy', 's.petrova', NULL, 12, 12),
+       (3,'Демо-Сибирь', 'Task3', 200, 'new', 'v.belova', 's.petrova', NULL, 52, 22),
+       (4,'РТК', 'Task4', 300, 'new', 'a.makenroy', 's.petrova', NULL, 12, 12),
+       (5,'Демо-Сибирь', 'Task5', 10, 'new', 'v.ivanova', 'a.makenroy', NULL, 1, 100),
+       (6,'МВД-Онлайн', 'Task6', 400, 'new', 'a.berkut', 'f.drozdov', NULL, 12, 22),
+       (7,'РТК', 'Task7', 500, 'new', 'a.makenroy', 'v.belova', NULL, 22, 35),
+       (8,'Демо-Сибирь', 'Task8', 100, 'new', 'a.makenroy', 's.petrova', NULL, 94, 12),
+       (9,'МВД-Онлайн', 'Task9', 900, 'new', 'v.ivanova', 'f.drozdov', NULL, 88, 24),
+       (10,'Демо-Сибирь', 'Task10', 30, 'new', 'a.makenroy', NULL, '2015/1/1', 99, 2),
+       (11,'РТК', 'Task11', 1000, 'new', 'v.ivanova', 'a.berkut', '2016/4/1', NULL, NULL),
+       (12,'Демо-Сибирь', 'Task12', 50, 'new', 'a.makenroy', NULL, '2015/8/1', 66, 32),
+       (13,'СС.Контент', 'Task13', 1, 'new', 'a.makenroy', 'a.kasatkin', '2016/1/3', 99, 2),
+       (14,'СС.Контент', 'Task14', 20, 'new', 'a.makenroy', 'a.kasatkin', '2016/1/1', 22, 3),
+       (15,'СС.Контент', 'Task15', 20, 'new', 'a.makenroy', 'a.kasatkin', '2016/1/2', NULL, NULL);
 ------------------------------------------------------
 --------------------------------1-3
 SELECT *
@@ -95,12 +102,38 @@ FROM tasks
 WHERE tcreator != 's.petrova'
   AND (tresponsible IN ('v.ivanova', 'a.makenroy', 'a.berkut'));
  
- ---------------------------------------------------1-4
+ ---------------------------------------------------4
 SELECT * 
 FROM tasks
 WHERE tresponsible LIKE '%kasatkin%'
 AND tstart BETWEEN '2016/1/1%' AND '2016/1/3%';
+---------------------------------------------5
+SELECT t.ID, t.ttitle, u.udepartment
+FROM tasks t,
+    Users u
+WHERE t.tresponsible LIKE '%petrov%'
+  AND t.tcreator = u.ulogin
+  AND u.udepartment IN ('Production', 'bookkeeping', 'Administration');
+---------------------------------------------6
+SELECT *
+FROM tasks
+WHERE tresponsible IS NULL;
 
+UPDATE tasks
+SET tresponsible = 's.petrova'
+WHERE tresponsible IS NULL;
+
+-------------------------------------7
+CREATE TABLE tasks2 AS
+SELECT *
+FROM tasks;
+
+------------------------------------8
+SELECT *
+FROM users
+WHERE uname NOT LIKE '%a'
+  AND ulogin LIKE '%r%'
+  and ulogin like 'p%';
 
 
 
