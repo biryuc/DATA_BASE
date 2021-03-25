@@ -1,0 +1,449 @@
+
+---------------------------TABLE
+drop table if exists A,B;
+
+create table A (
+A_id int ,
+A_data text,
+primary key(A_id));
+
+create table B (
+B_id int,
+B_data text,
+B_aid int,
+primary key (B_id),
+foreign key (B_aid) references A (A_id));
+
+select *
+from a ;
+
+
+select *
+from B;
+
+
+INSERT INTO A(A_data, a_id)
+VALUES ('cola', 2),
+       ('pepsi',3);
+   
+INSERT INTO B (B_data, B_id)
+VALUES ('sprite', 1),
+       ('mirinda', 4);
+
+INSERT INTO B(b_id ,B_data, B_aid)
+VALUES (5,'cola', 2),
+       (6,'pepsi', 3);
+      
+--нарушает 
+DELETE
+FROM A
+WHERE A_data LIKE 'pepsi';
+
+--не нарушает
+delete 
+from b 
+where b_data like 'pepsi';
+--нарушает 
+delete 
+from a where a_id =2;
+--не нарушает 
+delete 
+from B where B_aid =2;
+
+update A
+set a_data ='cola'
+where a_data ='pepsi';
+
+update A 
+set a_data = 'pepsi'
+where a_id =3;
+-------------------------------SQL
+drop table if exists A,B;
+
+create table A (
+A_id int NOT NULL UNIQUE,
+A_data text NOT NULL UNIQUE,
+primary key(A_id),
+CONSTRAINT check_iID CHECK (A_id is NOT NULL));
+
+create table B (
+B_id int NOT NULL UNIQUE,
+B_data text NOT NULL UNIQUE,
+B_aid int,
+primary key (B_id),
+foreign key (B_aid) references A (A_id));
+
+select *
+from a ;
+
+
+select *
+from B;
+
+INSERT INTO A(A_data, a_id)
+VALUES ('cola', 2),
+       ('pepsi',3);
+      
+INSERT INTO A(A_data, a_id)
+VALUES ('mirinda', 20),
+       ('sprite',30);
+      
+INSERT INTO B(B_data, B_id,b_aid)
+VALUES ('cola', 20,2),
+       ('pepsi',30,3);
+--нарушает      
+INSERT INTO B(B_data, B_id,b_aid)
+VALUES ('cola', 50,29);
+--нарушает
+delete 
+from A where a_data ='cola';
+------------------------
+delete 
+from B where b_data ='cola';
+
+update b 
+set b_id = 28
+where b_id =20;
+--------------------------
+--нарушает
+UPDATE A 
+SET a_id = null
+where a_id =2 ;
+--------------------------------------3-2
+drop table if exists ONE,TWO,one_two_link ;
+
+INSERT INTO ONE (one_id,project,title,creator,start)
+VALUES (1,'Поддержка', 'Task1',  'i.sidorov', 15),
+		(2,'Поддержка', 'Task2',  'i.sidorov', 12),
+       (3,'Демо-Сибирь', 'Task3',  's.petrova',  22),
+       (4,'РТК', 'Task4', 's.petrova',  12),
+       (5,'Демо-Сибирь', 'Task5', 'a.makenroy',  100);
+      
+INSERT INTO TWO (two_id,two_project,two_title,two_creator,two_start)
+VALUES (1,'Поддержка', 'Task6',  'i.sidorov', 15),
+		(2,'Поддержка', 'Task7',  'i.sidorov', 12),
+       (3,'Демо-Сибирь', 'Task8',  's.petrova',  22),
+       (4,'РТК', 'Task9', 's.petrova',  12),
+       (5,'Демо-Сибирь', 'Task10', 'a.makenroy',  100);
+
+
+-------------- one to one --------------
+CREATE TABLE ONE
+(
+  project varchar(30),
+  title varchar(30),
+  creator varchar(30),
+  start int,
+  one_id INT,
+  PRIMARY KEY(one_id)
+);
+
+CREATE TABLE two
+(
+  two_project varchar(30),
+  two_title varchar(30),
+  two_creator varchar(30),
+  two_start int,
+  two_id INT,
+  PRIMARY key(two_id),
+  FOREIGN KEY (two_id) REFERENCES one (one_id)
+);
+
+------------ one to many --------------
+drop table if exists ONE,TWO;
+CREATE TABLE ONE
+(
+  one_id INT,
+  PRIMARY KEY(one_id)
+);
+
+CREATE TABLE two
+(
+  two_id INT,
+  PRIMARY key(two_id),
+  two_aid INT,
+  FOREIGN KEY (two_aid) REFERENCES one (one_id)
+);
+
+---------------- many to many  --------------
+drop table if exists ONE,TWO,one_two_link ;
+CREATE TABLE ONE
+(
+  one_id INT,
+  PRIMARY KEY(one_id)
+ );
+
+
+CREATE TABLE two
+(
+  two_id INT,
+  PRIMARY KEY(two_id)
+);
+
+CREATE TABLE one_two_link
+(
+  first_one_id INT,
+  second_two_id INT,
+  FOREIGN KEY (first_one_id) REFERENCES one (one_id),
+  FOREIGN KEY (second_two_id) REFERENCES two (two_id),
+  PRIMARY KEY (second_two_id, first_one_id)
+);
+
+
+----------------------------------------------------------3-3(1)
+
+
+
+----------------------------------------------------------3-3(2)
+--N--начальник
+--R--рядовой
+--ZN-- зам. начальника
+--O--oficer
+drop table if exists notnormal;
+create table notnormal
+(
+ certificate_equipment int ,
+ last_name varchar(30),
+ rank_army varchar(30),
+ post varchar(30),
+ star int,
+ type_army varchar(30),
+ equipment varchar(30),
+ primary key (certificate_equipment)
+ );
+ 
+insert into notnormal (certificate_equipment,last_name,rank_army,post,star,type_army,equipment)
+VALUES (1,'Petrov','General', 'N', 1,'Motostrel','motorcycle'),
+	   (2,'Sidorov','Lieutenant', 'O', 2,'rocket_troops','bomb'),
+	   (3,'Biryuchkov','Colonel', 'O', 3,'helicopter_troops','helicopter'),
+	   (4,'Petrov','General', 'N', 1,'PVO','Zenit'),
+	   (5,'Tropicin','Captain', 'ZN', 4,'sea_troops',null);
+
+select *
+from notnormal;
+--1)
+DELETE FROM notnormal WHERE last_name = 'Petrov';
+--2)
+insert into notnormal(type_army,equipment)
+VALUES('robot_troops','robot');
+
+--3)
+UPDATE notnormal
+SET last_name = 'Shoigu'
+WHERE last_name='Petrov';
+
+select last_name
+from notnormal
+where equipment is null;
+
+drop table if exists new_select;
+create table new_select
+(
+	university varchar(30),
+	id int,
+	primary key (id)
+);
+
+insert into new_select (id,university)
+values (1,NULL);
+
+select *
+from new_select;
+
+select id
+from new_select
+where university is null;
+
+
+select *
+from new_select
+where university = university;
+
+
+-------------------------------3-4
+drop table if exists sugar_water ;
+
+INSERT INTO sugar_water (company,drink_type,volume,price,amount,sugar)
+VALUES ('Nestle','сок', 2,  100, 10000,10),
+		('Coca-cola','газировка', 3,  250, 25000,20),
+       ('Sprite','газировка',3,200,  20000,20),
+       ('Fresh_bar','газировка', 3, 200, 20000,20),
+       ('Дюшес','сок', 2, 150,  15000,10);
+      
+
+CREATE TABLE sugar_water
+(
+  company varchar(30),
+  drink_type varchar(30),
+  volume int,
+  price int,
+  amount INT,
+  sugar int ,
+  primary key (company,drink_type)
+);
+select *
+from sugar_water;
+
+--1->таблица по определению в первой нормальной форме
+--все значения таблицы являются атомарными (неделимыми). Это означает, что ячейки таблицы должны содержать одиночные значения и все записи в отдельном столбце таблицы (атрибуте) должны иметь один и тот же тип,
+--в качестве значений атрибута таблицы не допускаются группы или массивы повторяющихся данных.
+
+
+--2
+--Отношение находится во 2НФ, если оно находится в 1НФ и каждый не ключевой атрибут неприводимо зависит от Первичного Ключа(ПК).
+drop table if exists sugar,water ;
+create table sugar
+(
+ drink_type varchar(30) unique,
+ volume int,
+ sugar int,
+ primary key (drink_type)
+);
+
+INSERT INTO sugar (drink_type,volume,sugar)
+VALUES ('сок',2,10),
+	   ('газировка',3,20);
+	  
+select *
+from sugar;
+      
+INSERT INTO water (company,drink_type,price,amount)
+VALUES ('Nestle','сок',  100, 10000),
+		('Coca-cola','газировка',250, 25000),
+       ('Sprite','газировка',200,  20000),
+       ('Fresh_bar','газировка',200, 20000),
+       ('Дюшес','сок', 150,15000);
+
+create table water
+(
+ company varchar(30),
+ drink_type varchar(30),
+ price int,
+ amount INT,
+ PRIMARY KEY(company,drink_type)
+);
+
+select *
+from water;
+--------------------------------
+--3 НФ
+--Отношение находится в 3НФ, когда находится во 2НФ и каждый не ключевой атрибут нетранзитивно зависит от первичного ключа. Проще говоря, второе правило требует выносить все не ключевые поля, содержимое которых может относиться к нескольким записям таблицы в отдельные таблицы.
+drop table if exists sugar2,water2 ;
+create table water2
+(
+ company varchar(30),
+ drink_type varchar(30) ,
+ price int,
+ PRIMARY KEY(company,drink_type)
+);
+
+INSERT INTO water2 (company,drink_type,price)
+VALUES ('Nestle','сок',  100),
+		('Coca-cola','газировка',250),
+       ('Sprite','газировка',200),
+       ('Fresh_bar','газировка',200),
+       ('Дюшес','сок', 150);
+      
+
+create table sugar2
+(
+ price int ,
+ amount int,
+ PRIMARY KEY(price)
+);
+	   
+INSERT INTO sugar2 (price,amount)
+VALUES (100,10000),
+		(250,25000),
+       (200,20000),
+       (150, 15000); 
+       
+select *
+from water2;
+select *
+from sugar2;
+-----------------------------------------------
+--Таблица water2 уже находится в Нормальная форма Бойса-Кодда (НФБК) и в 4нф
+--Отношение находится в НФБК, когда каждая нетривиальная и неприводимая слева функциональная зависимость обладает потенциальным ключом в качестве детерминанта.
+--Но добавлю и приведу
+drop table if exists water3,water4,water5 ;
+create table water3
+(
+ company varchar(30),
+ drink_type varchar(30),
+ price int ,
+ amount int
+);
+--Потенциальные ключи {company,price}, {company,amount}, {drink_type, price}, {drink_type, amount}
+INSERT INTO water3 (company,drink_type,price,amount)
+VALUES ('Nestle','сок',  100,10000),
+		('Coca-cola','газировка',250,25000),
+       ('Sprite','газировка',200,20000),
+       ('Fresh_bar','газировка',220,23000),
+       ('Дюшес','сок', 150,15000);
+      
+ create table water4(company varchar(30),drink_type varchar(30),discount varchar(30),primary key (company));
+
+INSERT INTO water4 (company,drink_type,discount)
+VALUES ('Nestle','сок','yes'),
+		('Coca-cola','газировка','no'),
+       ('Sprite','газировка','yes'),
+       ('Fresh_bar','газировка','no'),
+       ('Дюшес','сок','yes');
+      
+
+create table water5 (drink_type varchar(30),price int ,amount int ,primary key (drink_type,price) );
+      
+INSERT INTO water5 (drink_type,price,amount)
+VALUES ('сок',  100,10000),
+		('газировка',250,25000),
+       ('газировка',200,20000),
+       ('газировка',220,23000),
+       ('сок', 150,15000);
+ select *
+ from water5 ;
+ --------------------------------------4нф
+ drop table if exists water6,water7,water8;
+ -------Отношение находится в 4НФ, если оно находится в НФБК и все нетривиальные многозначные зависимости фактически являются функциональными зависимостями от ее потенциальных ключей.
+create table water6 (drink_type varchar(30),price int ,amount int ,primary key (drink_type,price,amount));
+INSERT INTO water6 (drink_type,price,amount)
+VALUES ('сок',  100,10000),
+		('газировка',250,25000),
+       ('газировка',200,20000),
+       ('газировка',220,23000),
+       ('сок', 150,15000);
+--В данном случае первичный ключ здесь состоит из всех трех столбцов, поэтому эта таблица автоматически находится в третьей нормальной форме и нормальной форме Бойса-Кодда. Однако она не находится в четвертой нормальной форме, так как здесь есть многозначная зависимость
+ create table  water7 
+ (
+ 	drink_type varchar(30),
+ 	price int,
+ 	primary key (drink_type,price)
+ ) ;
+
+INSERT INTO water7 (drink_type,price)
+VALUES ('сок',  100),
+		('газировка',250),
+       ('газировка',200),
+       ('газировка',220),
+       ('сок', 150);
+ 
+create table  water8 
+ (
+ 	drink_type varchar(30),
+ 	amount int,
+ 	primary key (drink_type,amount)
+ ) ;
+
+INSERT INTO water8 (drink_type,amount)
+VALUES ('сок',10000),
+		('газировка',25000),
+       ('газировка',20000),
+       ('газировка',23000),
+       ('сок', 15000);
+ select *
+ from water6 ;
+ select *
+ from water7;
+ select *
+ from water8;
+ 
