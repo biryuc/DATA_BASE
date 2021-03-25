@@ -1,0 +1,167 @@
+--1-2-3-5-6-7-10------------------------2-1!!!!!!!!!!!!!!!!1
+select tresponsible , avg(tpriority),tstart 
+from tasks 
+group by tresponsible,tstart 
+order by avg(tpriority) DESC
+limit 3;
+----------------------------2-2!!!!!!!!!!!!!!!!!!!!
+SELECT concat(count(tasks.ID), ' - ', extract(MONTH FROM tstart), ' - ', ulogin) 
+FROM users,
+     tasks
+WHERE tasks.tresponsible = users.ulogin
+ 	AND extract(YEAR FROM tstart) = 2015
+ 	and tstart IS NOT NULL
+ GROUP BY users.ulogin, extract(MONTH from tstart);
+---------------------------2-3
+select ulogin ,  sum(t2.trealtime - t2.tspent) "-", sum(t3.tspent - t3.trealtime) "+" 
+from tasks t2 ,
+	tasks t3 ,
+	users  
+where t2.tspent < t2.trealtime
+	and t3.tspent > t3.trealtime
+	and ulogin = t2.tcreator 
+	and t3.tcreator = ulogin 
+ group by ulogin;
+
+SELECT ulogin, (sum(abs(tasks.trealtime - tasks.tspent)) + sum(tasks.trealtime - tasks.tspent)) / 2 as "-",
+(sum(abs(tasks.trealtime - tasks.tspent)) - sum(tasks.trealtime - tasks.tspent)) / 2 as "+"
+FROM tasks,users 
+WHERE ulogin is not null
+  and ulogin = tcreator
+GROUP BY ulogin;
+------------------------------2-4
+SELECT tcreator, tresponsible
+FROM tasks
+where tcreator != tresponsible 
+GROUP BY tcreator, tresponsible;
+--лексико графическая проверка
+
+SELECT LEAST(tcreator, tresponsible), GREATEST(tcreator, tresponsible) 
+FROM tasks;
+
+SELECT tcreator,tresponsible 
+FROM tasks
+where tcreator > tresponsible ;
+--как работает
+(select tcreator ,  tresponsible   from tasks where tcreator > tresponsible) union
+(select tcreator ,  tresponsible   from tasks where tcreator < tresponsible) union
+(select tcreator , tresponsible  from tasks where tcreator = tresponsible);
+--------------------------------2-5
+SELECT ulogin, length(ulogin)
+FROM users
+ORDER BY length DESC
+LIMIT 1;
+-------------------------------2-6
+DROP TABLE IF EXISTS test1, test2;
+
+CREATE TABLE test1
+(
+  str1 VARCHAR(10000)
+);
+
+CREATE TABLE test2
+(
+  str2 CHAR(10000)
+);
+
+
+INSERT INTO test1(str1) VALUES ('Hello');
+INSERT INTO test2(str2) VALUES ('Hello');
+--что хранится(запись длины)
+
+ select sum(pg_column_size(test1.str1)), sum(pg_column_size(test2.str2))
+FROM test1 ,
+     test2;
+-------------------------------------2-7
+--соотнесённый
+SELECT tresponsible , tpriority FROM tasks
+WHERE tresponsible IN (SELECT ulogin FROM users WHERE ulogin = tasks.tresponsible);
+--соотнесённый
+ SELECT ulogin, max(tpriority),tresponsible
+FROM users,
+     tasks
+WHERE tasks.tresponsible = users.ulogin
+GROUP BY ulogin, tresponsible;
+------------------------------------------2-8
+SELECT tresponsible, sum(trealtime)
+FROM tasks
+     GROUP BY tresponsible
+     having (sum(trealtime) > avg(trealtime) );
+---среднее по задачам каждого  пользователя
+SELECT tresponsible, avg(trealtime)
+FROM tasks 
+where tresponsible is not null
+GROUP BY tresponsible;
+--группировка и having
+SELECT tresponsible, sum(trealtime)
+FROM tasks 
+where tresponsible is not null
+GROUP BY tresponsible;
+
+SELECT tresponsible , sum(trealtime)
+    FROM tasks
+    where tresponsible  is not null
+	GROUP BY tresponsible 
+    HAVING ((sum(trealtime) > (SELECT avg(trealtime) FROM tasks)) );
+-------------------------------------------2-9
+DROP VIEW IF exists task_nine ; 
+
+
+create view task_nine as
+select t9.tcreator,
+       -- всего задач у каждого
+       count(t9.id) as all_tasks,
+(select count(ontime.id) from
+		(select id, tcreator from tasks where (trealtime - tspent) > 0)
+		as ontime where ontime.tcreator = t9.tcreator group by ontime.tcreator) as on_time,
+(select count(late.id) from
+		(select id, tcreator from tasks where (trealtime - tspent) < 0)
+		as late where late.tcreator = t9.tcreator group by late.tcreator) as later,
+(select count(opened.id) from
+		(select id, tcreator from tasks where tstate in ('new'))
+		as opened where opened.tcreator = t9.tcreator group by opened.tcreator) as opened,
+(select count(closed.id) from
+		(select id, tcreator from tasks where tstate = 'closed')
+		as closed where closed.tcreator = t9.tcreator group by closed.tcreator) as closed,
+(select sum(spend.tspent) from
+		(select tspent , tcreator from tasks)
+		as spend where spend.tcreator = t9.tcreator group by spend.tcreator) as spended,
+(select avg(priority.tpriority) from
+		(select tpriority , tcreator from tasks)
+		as priority where priority.tcreator = t9.tcreator group by priority.tcreator) as pri, 
+(select avg(avgtime.trealtime) from
+		(select trealtime , tcreator from tasks)
+		as avgtime where avgtime.tcreator = t9.tcreator group by avgtime.tcreator) as avgtrealtime,
+(select avg(tpri.tpriority) from
+		(select tpriority , tcreator from tasks)
+		as tpri where tpri.tcreator = t9.tcreator and tpriority >100 group by tpri.tcreator) as greate
+from tasks t9 group by t9.tcreator ;
+		
+		
+ 
+ select *
+ from task_nine;
+ 
+------------------------------------------2-10
+SELECT users.ulogin, avg(trealtime) 
+FROM users,
+     tasks
+WHERE users.ulogin = tasks.tcreator
+group by users.ulogin;
+----------------------------------
+SELECT tasks.ttitle , users.ulogin
+FROM (SELECT ttitle , tcreator FROM tasks) as tasks,
+     (SELECT ulogin FROM users) as users
+WHERE users.ulogin = tasks.tcreator;
+
+select * 
+from users 
+where ulogin in (select tcreator from tasks where tpriority = 100);
+
+------------------------
+SELECT ttitle , tcreator FROM tasks
+WHERE tcreator IN (SELECT ulogin FROM users WHERE tasks.tcreator = users.ulogin);
+------------------------
+
+
+
