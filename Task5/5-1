@@ -1,0 +1,80 @@
+--Транзакция А
+BEGIN;
+UPDATE tasks SET ttitle = 'GOOD' WHERE id = 2;
+SELECT pg_sleep(10);
+UPDATE project SET pname = 'BEST' WHERE id = 25;
+COMMIT;
+
+--Транзакция Б
+BEGIN;
+UPDATE project SET pname = 'BEST' WHERE id = 25;
+SELECT pg_sleep(10);
+UPDATE tasks SET ttitle = 'GOOD' WHERE id = 2;
+COMMIT
+
+
+
+PYTHON
+
+
+import psycopg2 as lib
+from threading import Thread
+from contextlib import closing
+from psycopg2 import sql
+
+
+def TranzactionA():
+    db1 = lib.connect(dbname="postgres", user="postgres", password="89831318520", host="127.0.0.1", port="5433")
+    mycursor1 = db1.cursor()
+    try:
+        mycursor1.execute('UPDATE transaction SET name = %(p1)s WHERE id = 1', {"p1": "Good1"})
+        mycursor1.execute('SELECT pg_sleep(10)')
+        mycursor1.execute('UPDATE transaction SET time=1 WHERE id = 2')
+        db1.commit()
+    except (Exception, lib.DatabaseError) as error:
+        print(error)
+    finally:
+        mycursor1.close()
+        if db1 is not None:
+            db1.close()
+
+
+def TranzactionB():
+    db2 = lib.connect(dbname="postgres", user="postgres", password="89831318520", host="127.0.0.1", port="5433")
+    mycursor2 = db2.cursor()
+    try:
+        mycursor2.execute('UPDATE transaction SET time=2 WHERE id = 2')
+        mycursor2.execute('SELECT pg_sleep(10)')
+        mycursor2.execute('UPDATE transaction SET name = %(p2)s WHERE id = 1', {"p2": "Good2"})
+        db2.commit()
+    except (Exception, lib.DatabaseError) as error:
+        print(error)
+    finally:
+        mycursor2.close()
+        if db2 is not None:
+            db2.close()
+
+
+thread1 = Thread(target=TranzactionA, args=())
+thread2 = Thread(target=TranzactionB, args=())
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join() #блокировка потока
+
+
+
+C:\tmp\python.exe C:/Users/Никита/PycharmProjects/TSANILab3-1/main.py
+ОШИБКА:  обнаружена взаимоблокировка
+DETAIL:  Процесс 6480 ожидает в режиме ShareLock блокировку "транзакция 1764"; заблокирован процессом 11408.
+Процесс 11408 ожидает в режиме ShareLock блокировку "транзакция 1763"; заблокирован процессом 6480.
+HINT:  Подробности запроса смотрите в протоколе сервера.
+CONTEXT:  при изменении кортежа (0,1) в отношении "transaction"
+
+
+Process finished with exit code 0
+
+
+
