@@ -1,0 +1,199 @@
+-----------5-4
+DROP TABLE IF EXISTS storage,files cascade ;
+
+CREATE TABLE storage (
+node_id int not null,
+local_path text not null,
+primary key(node_id)
+);
+insert into storage(node_id, local_path)
+values (1,'1/'),
+       (2,'2/'),
+       (3,'3/'),
+       (4,'4/'),
+       (5,'5/');
+CREATE TABLE files(
+name text ,
+path text ,
+size int,
+create_day date ,
+write_day date,
+update_day date,
+id_node int,
+primary key(name,path),
+foreign key (id_node) references storage (node_id)
+);
+--1--Нужно знать имя и путь,node
+DROP FUNCTION if exists create_new_file(file_name text, add_local_path text,
+file_size int,add_node_id int);
+
+
+create or replace function create_new_file(file_name text, add_local_path text,
+file_size int,add_node_id int) returns integer
+as $$
+    begin
+    insert into files(name, path, size, create_day, write_day, update_day, id_node)
+    values (file_name,cast(add_node_id as text)||('/')||add_local_path||file_name,file_size,current_date,current_date,current_date,add_node_id);
+    return 1;
+    EXCEPTION
+        WHEN others THEN RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+        RAISE NOTICE 'Illegal operation: %', SQLERRM;
+        return 0;
+end $$
+language plpgsql;
+--check
+select *
+from create_new_file('1213.txt','G/tmp/',23,4);
+
+
+select *
+from create_new_file('12131.txt','1/tmp/',23,1);
+
+select *
+from files;
+
+--2----DELETE----------Знать : имя,путь
+DROP FUNCTION IF EXISTS delete_file(file_name text,file_path text);
+
+create function delete_file(file_name text,file_path text) returns text
+as $$
+begin
+    DELETE FROM files WHERE name = file_name and path = file_path;
+    RETURN 'ok';
+EXCEPTION
+    WHEN others THEN RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+    return 'The file does not existThe file does not exist';
+end $$
+language plpgsql;
+
+
+--check-------DELETE----------
+select *
+from delete_file('100000.txt','4:/G:/tmp/12.txt');
+
+select *
+from files;
+
+--3--------CHANGE_FILE-NAME----------Знать : имя и путь
+DROP FUNCTION IF EXISTS change_file_name(old_file_name text,new_file_name text,file_path text);
+create function change_file_name(old_file_name text,new_file_name text,file_path text) returns integer
+as $$
+begin
+    update files set name = new_file_name where name = old_file_name and path =file_path;
+    return 1;
+EXCEPTION
+    WHEN others THEN RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+    return 0;
+end $$
+language plpgsql;
+
+--check-------------CHANGE_FILE-NAME----------
+select *
+from change_file_name('12131.txt','New.txt','4:/G:/tmp/12131.txt');
+
+select *
+from files;
+
+select *
+from storage;
+
+---4--------COPY_FILE----------Знать : имя и путь откуда копировать , куда копировать
+DROP FUNCTION IF EXISTS copy_file(file_name text,file_path text,path_to_copy text);
+create function copy_file(file_name text,file_path text,path_to_copy text) returns integer
+as $$
+begin
+    INSERT INTO files
+    SELECT ('COPY_')||file_name, path_to_copy||('COPY_')||cast(file_name as text),size,f1.create_day, f1.write_day, f1.update_day,f1.id_node from files as f1
+    where name = file_name and path = file_path ;
+    RETURN 1;
+EXCEPTION
+    WHEN others THEN RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+    return 0;
+end$$
+language plpgsql;
+
+--check--------COPY_FILE----------
+select *
+from copy_file('New.txt','4:/G:/tmp/12131.txt','4:/G:/1/');
+
+select *
+from files;
+
+--5--------MOVE_FILE----------знать имя и путь, путь куда перемещать  и ноду
+DROP FUNCTION IF EXISTS move_file(file_name text,file_path text, path_to_move text, new_node int);
+create function move_file(file_name text,file_path text, path_to_move text, new_node int) returns integer
+as $$
+begin
+    update files set path = cast(new_node as text)||(':/')||path_to_move||cast(file_name as text) where name = file_name and path = file_path;
+    update files set id_node = new_node where path =cast(new_node as text)||(':/')||path_to_move||cast(file_name as text) and name = file_name;
+    RETURN 1;
+EXCEPTION
+    WHEN others THEN RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+    return 0;
+ end$$
+language plpgsql;
+
+--check--------MOVE_FILE----------
+select *
+from move_file('New.txt','4:/G:/tmp/12131.txt','G:/1/',3);
+
+select *
+from files;
+
+--6-----SEARCH_FILE
+drop function if exists depth_search(d text);
+CREATE OR REPLACE FUNCTION depth_search(d text)
+    RETURNS INT AS
+$$
+BEGIN
+    RETURN LENGTH(regexp_replace(d, '[^/]','', 'g'));
+end;
+$$ LANGUAGE plpgsql;
+
+SELECT *
+FROM depth_search('1/1/tmp/12131.txt');
+
+
+
+drop function if exists search_file(mask text, depth int);
+CREATE OR REPLACE FUNCTION search_file(mask text, depth int) RETURNS SETOF files AS
+$BODY$
+DECLARE
+    r files%rowtype;
+BEGIN
+    FOR r IN
+        SELECT * FROM files as p WHERE p.path LIKE mask AND (SELECT depth_search(p.path)) <= depth + 1
+    LOOP
+
+        RETURN NEXT r ;
+    END LOOP;
+    RETURN;
+EXCEPTION
+    WHEN others THEN RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+END;
+$BODY$
+LANGUAGE plpgsql;
+
+
+SELECT * FROM search_file('1%',3);
+
+select * from create_new_file('1.txt','2/',23,2);
+
+
+SELECT * FROM files as p WHERE p.path LIKE '1%' AND (SELECT depth_search(p.path)) < 3;
+select * from files as p WHERE  depth_search(p.path) < 2;
+
+select * from files as p WHERE p.path LIKE '%1%';
+
+select *
+from change_file_name('1213.txt','New.txt','4:/G:/tmp/1213.txt');
+
+select * from create_new_file('1.txt','1/',23,1);
+
+
+select * from files;
