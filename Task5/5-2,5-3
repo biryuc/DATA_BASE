@@ -1,0 +1,89 @@
+create table hello(a int);
+--COMMIT фиксирует текущую транзакцию. Все изменения, п
+-- роизведённые транзакцией, становятся видимыми для других и гарантированно сохранятся в случае сбоя.
+--ROLLBACK откатывает текущую транзакцию и приводит к аннулированию всех изменений, произведённых транзакцией.
+--SAVEPOINT устанавливает новую точку сохранения в текущей транзакции.
+--Точка сохранения — это специальная отметка внутри транзакции, которая позволяет откатить все команды,
+--выполненные после неё, и восстановить таким образом состояние на момент установки этой точки.
+--Savepoint commit rollback--5-2
+
+DROP TABLE IF EXISTS sale;
+
+CREATE TABLE IF NOT EXISTS sale
+(
+    id int,
+
+    time  TIMESTAMP
+);
+
+-- INSERT INTO sale(id, time)
+-- VALUES (1, '2018-01-20'),
+--        (2, '2018-01-21'),
+--        (3, '2018-01-22 '),
+--        (4, '2018-01-23'),
+--        (5, '2018-01-24'),
+--        (6, '2018-01-25'),
+--        (7, '2018-01-26'),
+--        (8, '2018-01-22'),
+--        (8, '2018-01-22'),
+--        (8, '2018-01-22');
+---------------------------------------5-3
+INSERT INTO sale(id, time)
+VALUES (1, '2018-01-20 12:21:01'),
+       (2, '2018-01-21 15:07:37'),
+       (3, '2018-01-22 9:15:18'),
+       (4, '2018-01-23 11:43:21'),
+       (5, '2018-01-24 10:11:31'),
+       (6, '2018-01-25 11:12:31'),
+       (7, '2018-01-26 14:09:20'),
+       (6, '2018-01-25 12:12:31'),
+       (6, '2018-01-25 13:12:31');
+WITH RECURSIVE R AS
+                   (
+                       SELECT extract(day  from timestamp '2018-01-20 12:21:01')||'-'||extract(month  from timestamp '2018-01-20 12:21:01')||'-'||extract(year  from timestamp '2018-01-20 12:21:01') as sale_day
+                       UNION
+                       SELECT extract(DAY from  time)||'-'||extract(month from  time)||'-'||extract(year from  time)
+                       FROM sale
+                       WHERE (time + interval '1' day) <= '2018-01-26 14:09:20'
+                   )
+SELECT *
+FROM R order by 1;
+
+select now()::date;
+
+
+WITH RECURSIVE t(n) AS (
+VALUES (1)
+UNION ALL
+SELECT n+1 FROM t WHERE n < (SELECT cast (extract ('day' from date_trunc('month',current_date) - interval '24 hour') as integer))
+)
+SELECT to_date ( n || '-'||extract ('month' from date_trunc('month',current_date) - interval '24 hour')
+   || '-'||extract ('year' from date_trunc('month',current_date) - interval '24 hour'), 'dd-mm-yyyy')
+FROM t;
+
+--||'-'||extract(month  from timestamp '2018-01-20 12:21:01')||'-'||extract(year  from timestamp '2018-01-20 12:21:01')
+select * from sale;
+
+
+---------------------------------------5-2
+drop table if exists transact;
+create table transact(id int, priority int);
+insert into transact(id,priority)
+values (100,10),
+       (110,20),
+       (109,30);
+
+
+begin transaction;
+UPDATE transact SET id = id + 100.00
+    WHERE priority = 10;
+SAVEPOINT my_savepoint;
+UPDATE transact SET id = id - 100.00
+    WHERE priority = 20;
+ROLLBACK TO my_savepoint;
+UPDATE transact SET id = id + 100.00
+    WHERE priority = 30;
+commit;
+end;
+
+select * from transact;
