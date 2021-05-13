@@ -1,0 +1,411 @@
+----------5-5
+DROP TABLE IF EXISTS Users, tasks, project,Tasks_history cascade ;
+
+--------------------------1
+CREATE table Users(
+uname varchar(30) NOT NULL,
+ulogin varchar(30) NOT NULL,
+uemail varchar(30),
+udepartment varchar(30),
+id_executor int ,
+primary key (ulogin)
+);
+
+
+
+
+CREATE table project(
+pname varchar(30) NOT NULL,
+pcommit text,
+pstart DATE ,
+pend DATE,
+id int,
+primary key (pname)
+);
+
+CREATE table tasks(
+serial_key serial,
+ttitle varchar(30) NOT NULL,
+tpriority int,
+tstate varchar(30),
+tspent int,
+trealtime int,
+tproject varchar(30),
+tcreator varchar(30),
+tstart date,
+ID int not null,
+tresponsible varchar(30),
+primary key (ttitle),
+FOREIGN KEY (tproject) REFERENCES project (pname),
+FOREIGN KEY (tcreator) REFERENCES Users (ulogin),
+FOREIGN KEY (tresponsible) REFERENCES Users (ulogin)
+);
+
+
+
+
+------------------------------------2
+INSERT INTO Users(uname, ulogin, uemail, udepartment)
+VALUES ('Касаткин Артем', 'a.kasatkin', 'a.kasatkin@ya.ru', 'Administration'),
+       ('Петрова София', 's.petrova', 's.petrova@ya.ru', 'bookkeeping'),
+       ('Дроздов Федр', 'f.drozdov', 'f.drozdov@ya.ru', 'Support'),
+       ('Иванова Василина', 'v.ivanova', 'v.ivanova@ya.ru', 'bookkeeping'),
+       ('Беркут Алексей', 'a.berkut', 'a.berkut@ya.ru', 'Support'),
+       ('Белова Вера', 'v.belova', 'v.belova@ya.ru', 'Support'),
+       ('Макенрой Алексей', 'a.makenroy', 'a.makenroy@ya.ru', 'Production'),
+       ('Fedotov Алексей', 'a.fedotov', 'a.fedotov@ya.ru', 'Novosibirsk'),
+       ('Кинзин Кирилл', 'k.kinzin', 'k.kinzin@ya.ru', 'Moscow'),
+       ('Хорошов Федр', 'f.horoshov', 'f.horoshov@ya.ru', 'Vladivostok'),
+       ('Сидоров Иван', 'i.sidorov','i.sidorov@ya.ru','Administration');
+
+INSERT INTO project(id,pname, pstart, pend)
+VALUES (1,'РТК', '2016/01/31', NULL),
+       (2,'СС.Контент', '2015/02/23', '2016/12/31'),
+       (3,'Демо-Сибирь', '2015/05/11', '2015/01/31'),
+       (4,'МВД-Онлайн', '2015/05/22', '2016/01/31'),
+       (5,'Поддержка', '2016/06/07', NULL);
+
+INSERT INTO tasks(ID,tproject, ttitle, tpriority, tstate, tcreator, tresponsible, tstart, tspent, trealtime)
+VALUES (1,'Поддержка', 'Task1', 20, 'new', 'a.berkut', 'i.sidorov', NULL, 10, 15),
+		(2,'Поддержка', 'Task2', 100, 'new', 'a.makenroy', 'i.sidorov', NULL, 12, 12),
+       (3,'Демо-Сибирь', 'Task3', 200, 'new', 's.petrova', 's.petrova', NULL, 52, 22),
+       (4,'РТК', 'Task4', 300, 'new', 'a.makenroy', 's.petrova', NULL, 12, 12),
+       (5,'Демо-Сибирь', 'Task5', 10, 'new', 'v.ivanova', 'a.makenroy', NULL, 1, 100),
+       (6,'МВД-Онлайн', 'Task6', 400, 'new', 'a.berkut', 'f.drozdov', NULL, 12, 22),
+       (7,'РТК', 'Task7', 500, 'new', 'a.makenroy', 'v.belova', NULL, 22, 35),
+       (8,'Демо-Сибирь', 'Task8', 100, 'new', 'a.makenroy', 's.petrova', NULL, 94, 12),
+       (9,'МВД-Онлайн', 'Task9', 900, 'new', 'v.ivanova', 'f.drozdov', NULL, 88, 24),
+       (10,'Демо-Сибирь', 'Task10', 30, 'new', 'a.makenroy', 'f.drozdov', '2015/1/1', 99, 2),
+       (11,'РТК', 'Task11', 1000, 'new', 'v.ivanova', 'a.berkut', '2016/4/1', NULL, NULL),
+       (12,'Демо-Сибирь', 'Task12', 50, 'new', 'a.makenroy', NULL, '2015/8/1', 66, 32),
+       (13,'СС.Контент', 'Task13', 1, 'new', 'a.makenroy', 'a.kasatkin', '2016/1/3', 99, 2),
+       (14,'СС.Контент', 'Task14', 20, 'new', 'a.makenroy', 'a.kasatkin', '2015/1/1', 22, 3),
+       (15,'СС.Контент', 'Task15', 20, 'new', 'a.makenroy', 'a.kasatkin', '2015/1/2', NULL, NULL),
+       (16,'Поддержка', 'Task16', 100, 'new', 'a.makenroy', 'a.makenroy','2015/2/1', 12, 12);
+
+-----------------------------------------------------------
+select * from tasks;
+
+CREATE TABLE Tasks_history
+(
+serial_key serial,
+ID int not null,
+time_change date,
+type_transaction varchar(30),
+ttitle varchar(30) NOT NULL,
+tpriority int,
+tstate varchar(30),
+tspent int,
+trealtime int,
+tproject varchar(30),
+tcreator varchar(30),
+tstart DATE,
+tresponsible varchar(30),
+--primary key (id,ttitle),
+FOREIGN KEY (tproject) REFERENCES project (pname),
+FOREIGN KEY (tcreator) REFERENCES Users (ulogin),
+FOREIGN KEY (tresponsible) REFERENCES Users (ulogin)
+);
+
+select *
+from tasks_history;
+
+drop table if exists current_update cascade ;
+
+drop table if exists current_update cascade ;
+create table current_update(
+serial_key serial,
+ID int not null,
+time_change date,
+type_transaction varchar(30),
+ttitle varchar(30) NOT NULL,
+tpriority int,
+tstate varchar(30),
+tspent int,
+trealtime int,
+tproject varchar(30),
+tcreator varchar(30),
+tstart DATE,
+tresponsible varchar(30),
+FOREIGN KEY (tproject) REFERENCES project (pname),
+FOREIGN KEY (tcreator) REFERENCES Users (ulogin),
+FOREIGN KEY (tresponsible) REFERENCES Users (ulogin)
+);
+
+------------TRIGGER_TO SAVE NEW UPDATE ROWS------------------
+
+CREATE OR REPLACE FUNCTION changes_update() RETURNS TRIGGER AS
+$$
+BEGIN
+     IF lower(tg_op) = 'update' THEN
+        INSERT INTO current_update (time_change,type_transaction,ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+         VALUES (now(),'update',new.ttitle, new.tpriority, new.tstate, new.tspent, new.trealtime, new.tproject, new.tcreator, new.tstart,
+                new.id, new.tresponsible);
+     END IF;
+    RETURN new;
+end
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_trigger
+    AFTER UPDATE
+    ON Tasks
+    FOR EACH ROW
+EXECUTE PROCEDURE changes_update();
+
+--------------------TRIGGER TO SAVE TASKS HISTORY---------------------------------
+drop function if exists changes();
+CREATE OR REPLACE FUNCTION changes() RETURNS TRIGGER AS
+$$
+BEGIN
+    IF lower(tg_op) = 'insert' THEN
+        INSERT INTO Tasks_history (time_change,type_transaction,ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+        VALUES (now(),'insert',new.ttitle, new.tpriority, new.tstate, new.tspent, new.trealtime, new.tproject, new.tcreator, new.tstart,
+                new.id, new.tresponsible);
+    END IF;
+    IF lower(tg_op) = 'update' THEN
+        INSERT INTO Tasks_history (time_change,type_transaction,ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+        VALUES (now(),'update',old.ttitle, old.tpriority, old.tstate, old.tspent, old.trealtime, old.tproject, old.tcreator, old.tstart,
+                old.id, old.tresponsible);
+    END IF;
+    IF lower(tg_op) = 'delete' THEN
+        INSERT INTO Tasks_history (time_change,type_transaction,ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+        VALUES (now(),'delete',old.ttitle, old.tpriority, old.tstate, old.tspent, old.trealtime, old.tproject, old.tcreator, old.tstart,
+                old.id, old.tresponsible);
+    END IF;
+    RETURN new;
+END
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER modification_trigger
+    AFTER INSERT OR UPDATE OR DELETE
+    ON Tasks
+    FOR EACH ROW
+EXECUTE PROCEDURE changes();
+------------------------------------------------------------------------------
+
+
+INSERT INTO tasks(ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+VALUES ('Task122',20,null,20,30,'СС.Контент', 'a.makenroy', '2015/2/1',17, 'a.makenroy'),
+       ('Task29',20,null,20,30,'СС.Контент', 'a.makenroy', '2015/2/1',18, 'a.makenroy');
+
+select *
+from delete_tasks('Task122');
+
+delete from tasks where ttitle='Task122';
+
+select *
+from tasks;
+
+delete from tasks where ttitle='Task29';
+
+
+update tasks set tpriority=100 where tpriority=900;
+
+SELECT *
+FROM Tasks;
+
+select *
+from revert_change('Task9','update');
+
+
+SELECT *
+FROM Tasks_history;
+
+select *
+from current_update;
+
+-----------Просмотр истории ПО КОНКРЕТНОЙ ЗАДАЧЕ
+DROP FUNCTION IF EXISTS view_history(title_name VARCHAR(30));
+
+CREATE OR REPLACE FUNCTION view_history( title_name VARCHAR(30)) RETURNS SETOF Tasks_history AS
+$$
+BEGIN
+    RETURN QUERY
+        SELECT * FROM Tasks_history WHERE  ttitle = title_name;
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+    RETURN;
+END$$
+LANGUAGE plpgsql;
+
+select *
+from view_history('Task122');
+
+
+
+
+
+
+-------------------------ОТКАТ ИЗМЕНЕНИЙ INSERT UPDATE-----------------------
+
+DROP FUNCTION IF EXISTS revert_change(Tasks_name varchar(30));
+
+CREATE OR REPLACE FUNCTION revert_change(Tasks_name varchar(30),type varchar(30)) RETURNS VARCHAR AS
+$$
+DECLARE
+    old_tasks Tasks%ROWTYPE;
+    old_history Tasks_history%ROWTYPE;
+BEGIN
+   select * from tasks_history  WHERE  serial_key= (SELECT MAX(serial_key) FROM tasks_history AS int WHERE ttitle=Tasks_name) INTO old_history;
+   select * from tasks where ttitle=Tasks_name into old_tasks;
+   if old_tasks is null then
+       return 'tasks does not exists';
+   else  if type='insert' then
+        delete from tasks where ttitle= old_history.ttitle ;
+        insert into tasks_history(id, time_change, type_transaction, ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, tresponsible)
+        values (old_history.id,now(),'recovery insert',old_history.ttitle,old_history.tpriority,old_history.tstate,old_history.tspent,old_history.trealtime,old_history.tproject,old_history.tcreator,old_history.tstart,old_history.tresponsible);
+   return 'recovery insert succesfull';
+    else if type='update' then
+        delete from tasks where ttitle=old_history.ttitle;
+        insert into tasks (ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+        values (old_history.ttitle,old_history.tpriority,old_history.tstate,old_history.tspent,old_history.trealtime,old_history.tproject,old_history.tcreator,old_history.tstart,old_history.id,old_history.tresponsible);
+        insert into tasks_history(id, time_change, type_transaction, ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, tresponsible)
+        values (old_history.id,now(),'recovery update',old_history.ttitle,old_history.tpriority,old_history.tstate,old_history.tspent,old_history.trealtime,old_history.tproject,old_history.tcreator,old_history.tstart,old_history.tresponsible);
+        return 'recovery update succesfull';
+
+    end if;
+    end if;
+   end if;
+
+exception
+    when others then return 'wrong';
+END;
+$$ LANGUAGE plpgsql;
+
+
+SELECT *
+FROM Tasks_history;
+
+select *
+from tasks;
+
+select * from tasks_history where ttitle='Task29'  and type_transaction= 'insert';
+
+select *
+from revert_change('Task9','insert');
+
+UPDATE Tasks
+SET tpriority=99
+WHERE ttitle = 'Task122';
+delete from tasks where ttitle='Task122';
+
+INSERT INTO tasks(ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+VALUES ('Task122',20,null,20,30,'СС.Контент', 'a.makenroy', '2015/2/1',125, 'a.makenroy');
+
+INSERT INTO tasks(ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+VALUES ('Task29',20,null,20,30,'СС.Контент', 'a.makenroy', '2015/2/1',124, 'a.makenroy');
+
+SELECT *
+FROM Tasks_history;
+
+select *
+from tasks;
+
+select *
+from revert_change('Task122','insert');
+
+
+
+SELECT *
+FROM Tasks_history;
+
+SELECT *
+FROM Tasks;
+
+---------------------DELETE TASKS -----------------------
+DROP FUNCTION IF EXISTS delete_tasks(Tasks_name varchar(30));
+
+CREATE OR REPLACE FUNCTION delete_tasks(Tasks_name varchar(30)) RETURNS VARCHAR AS
+$$
+declare
+    failed Tasks%ROWTYPE;
+BEGIN
+    select * from tasks where ttitle = Tasks_name into failed;
+
+    if  failed is null then
+        return 'This TASKS does not exists';
+    else
+    delete from tasks where ttitle = Tasks_name;
+   -- insert into Tasks_history (ID, time_change, type_transaction, ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, tresponsible)
+    --values (failed.id,now(),'delete',failed.ttitle,failed.tpriority,failed.tstate,failed.tspent,failed.trealtime,failed.tproject,failed.tcreator,failed.tstart,failed.tresponsible);
+    return 'delete was succesfull';
+    end if;
+exception
+    when others then return 'wrong';
+END;
+$$ LANGUAGE plpgsql;
+
+select * from tasks;
+select *
+from revert_delete_tasks('Task2');
+select * from delete_tasks('Task2');
+
+select *
+from Tasks_history;
+select *
+from view_history('Task2');
+---------------ПРОСМОТР ИСТОРИИ УДАЛЕНИЙ ПО ЗАДАЧЕ------------------------------------
+DROP FUNCTION IF EXISTS view_deleted_tasks( title_name VARCHAR(30));
+
+CREATE OR REPLACE FUNCTION view_deleted_tasks( title_name VARCHAR(30)) RETURNS SETOF Tasks_history AS
+$$
+BEGIN
+    RETURN QUERY
+        SELECT * FROM Tasks_history WHERE  ttitle = title_name and type_transaction=lower('delete');
+EXCEPTION
+    WHEN OTHERS THEN
+    RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+    RETURN;
+END$$
+LANGUAGE plpgsql;
+
+select *
+from view_deleted_tasks('Task2');
+------------------------RECOVERY TASKS----------
+DROP FUNCTION IF EXISTS revert_delete_tasks(Tasks_name varchar(30));
+
+CREATE OR REPLACE FUNCTION revert_delete_tasks(Tasks_name varchar(30)) RETURNS VARCHAR AS
+$$
+DECLARE
+    del Tasks_history%ROWTYPE;
+    exists_tasks tasks%ROWTYPE;
+BEGIN
+    select * from tasks_history  WHERE  serial_key= (SELECT MAX(serial_key) FROM tasks_history AS int WHERE ttitle=Tasks_name AND type_transaction= lower('delete')) INTO del;
+    select * from tasks where ttitle= Tasks_name  into exists_tasks;
+    if  exists_tasks is not null  then
+        return 'This task was not deleted';
+    else if  exists_tasks is null then
+
+         insert into tasks (ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+         values (del.ttitle,del.tpriority,del.tstate,del.tspent,del.trealtime,del.tproject,del.tcreator,del.tstart,del.id,del.tresponsible);
+         --DELETE FROM tasks_history where ttitle = Tasks_name and type_transaction= lower('delete') ;
+         insert into tasks_history(time_change, type_transaction, ttitle, tpriority, tstate, tspent, trealtime, tproject, tcreator, tstart, ID, tresponsible)
+         values (now(),'recovering a deleted task',del.ttitle,del.tpriority,del.tstate,del.tspent,del.trealtime,del.tproject,del.tcreator,del.tstart,del.id,del.tresponsible);
+         return 'recovery deleted tasks was succesfull';
+    end if;
+    end if;
+    return 'This task was not deleted';
+exception
+    when others then return 'wrong';
+END
+$$ LANGUAGE plpgsql;
+
+-----------------------------------------------------------------
+select * from tasks where ttitle= 'Task2' ;
+
+select * from tasks_history;
+
+select *
+from tasks;
+
+select *
+from revert_delete_tasks('Task2');
+
+select *
+from delete_tasks('Task2');
+select *
+from tasks where ttitle='Task122';
