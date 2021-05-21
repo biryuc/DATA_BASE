@@ -12,6 +12,7 @@ create table Doctors(
     primary key(serial_doctor_key,first_name,last_name)
 );
 
+
 insert into Doctors( first_name,last_name, specialty)
 values ('Ivanov','Ivan','therapist'),
        ('Pushnoi','Artem','cardiologist'),
@@ -50,6 +51,9 @@ insert into Patients(first_name,last_name,born_data)
 values ('Georgiy','Ivanov','2015/2/1'),
        ('Semen','Petrov','2015/2/1');
 
+select *
+from logandpass;
+
 -------------Links Doctors to patients-------------
 create table links_Doctors_patients(
     id_doctor serial ,
@@ -60,23 +64,6 @@ create table links_Doctors_patients(
     foreign key (id_patients) references Patients (serial_key)
 );
 
--------Что лечит
--- create table Hurt (
---     speciality varchar(80),
---     part_of_the_body varchar(80),
---     primary key (speciality,part_of_the_body),
---     foreign key (speciality) references Doctors (specialty)
--- );
---
--- insert into Hurt(speciality, part_of_the_body)
--- values ('therapist','general'),
---        ('cardiologist','сердце'),
---        ('hematologist','blood'),
---        ('surgeon','operation'),
---        ('traumatologist','injury'),
---        ('ophthalmologist','глаза');
-
-
 -----Экстренная помощь------------
 drop table if exists emergency;
 create table emergency(
@@ -86,7 +73,7 @@ create table emergency(
 );
 
 ---------results_analysis----------
-drop table if exists results_analysis_cardiologist,results_analysis_hematologist,results_analysis_surgeon,results_analysis_traumatologist,results_analysis_ophthalmologist;
+drop table if exists results_analysis_cardiologist,results_analysis_hematologist,results_analysis_surgeon,results_analysis_traumatologist,results_analysis_ophthalmologist cascade;
 drop table if exists results_analysis_cardiologist;
 create table results_analysis_cardiologist(
     id_patients_cardiologist INT not null ,
@@ -155,29 +142,33 @@ BEGIN
     return 'Скорая уже выехала.';
 end$$
 LANGUAGE plpgsql;
-
+select *
+from Patients;
 -----------------ДОБАВЛЕНИЕ НОВОГО ПАЦИЕНТА--------------------------------------
-DROP FUNCTION IF EXISTS insert_new_patients(first_n varchar(80) , last_n varchar(80),doctor_id int);
+DROP FUNCTION IF EXISTS insert_new_patients(first_n varchar(80) , last_n_1 varchar(80),doctor_id int,data_born date);
 
-CREATE OR REPLACE FUNCTION insert_new_patients(first_n varchar(80) , last_n varchar(80),doctor_id int,data_born date) RETURNS varchar  AS
+CREATE OR REPLACE FUNCTION insert_new_patients(first_n varchar(80) , last_n_1 varchar(80),doctor_id int,data_born date) RETURNS varchar  AS
 $$
 declare
-    id_pat Patients%ROWTYPE;
-    ID_DOC Doctors%ROWTYPE;
+    id_pat_1 integer;
+    ID_DOC integer;
+    spec varchar;
 BEGIN
     select serial_doctor_key from Doctors where serial_doctor_key= doctor_id into ID_DOC;
     insert into patients(first_name,last_name,born_data)
-    values (first_n,last_n,data_born);
-    select serial_key from patients where first_name=first_n and last_name=last_n and born_data = data_born into id_pat;
+    values (first_n,last_n_1,data_born);
+    select serial_key from patients where first_name=first_n and last_name=last_n_1 and born_data = data_born into id_pat_1;
     insert into links_Doctors_patients(id_doctor, id_patients, recording_time)
-    values (ID_DOC.serial_doctor_key,id_pat.serial_key,now());
+    values (ID_DOC,id_pat_1,now());
+    select specialty from Doctors where serial_doctor_key=doctor_id into spec;
+    insert into history(id_pat, name, last_n, born_date, doctors, time)
+    values (id_pat_1,first_n,last_n_1,data_born,spec,now());
     return 'Registration was succesfull';
 exception
     when others then return 'wrong';
 end$$
 LANGUAGE plpgsql;
-select *
-from patients;
+
 
 -----------------ДОКТОР К КОТОРОМУ ЗАПИСАЛИСЬ--------------------------------
 DROP FUNCTION IF EXISTS view_recording_doctor(doctor_id int);
@@ -231,31 +222,6 @@ LANGUAGE plpgsql;
 select *
 from view_doctor_room(4);
 
-------------------INSERT RESULTS----------------------------------------------------
-CREATE OR REPLACE FUNCTION insert_results(first_name_new varchar(80),last_name_new varchar(80), data_born date) RETURNS varchar  AS
-$$
-declare
-    id integer;
-BEGIN
-    select serial_key from patients as int where first_name=first_name_new and last_name=last_name_new and born_data=data_born into id;
-    RETURN QUERY
-        select * from results_analysis_hematologist where id_patients_hematologist=id;
-exception
-    WHEN OTHERS THEN
-    RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
-    RAISE NOTICE 'Illegal operation: %', SQLERRM;
-    RETURN;
-end$$
-LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION notack() RETURNS varchar   AS
-$$
-BEGIN
-    return 'Вы не сдавали анализы у этого врача';
-exception
-    WHEN OTHERS THEN return 'wrong';
-end$$
-LANGUAGE plpgsql;
 ------------------VIEW_RESULTS-----------------------------------------------------------------
 CREATE OR REPLACE FUNCTION results_analysis_hem(first_name_new varchar(80),last_name_new varchar(80), data_born date) RETURNS SETOF results_analysis_hematologist  AS
 $$
@@ -266,6 +232,8 @@ BEGIN
     if (id is null) then
         return ;
     end if;
+    insert into history(id_pat, name, last_n, born_date, doctors, time)
+    values (id,first_name_new,last_name_new,data_born,'hematologist',now());
     RETURN QUERY
         select * from results_analysis_hematologist where id_patients_hematologist=id;
 exception
@@ -278,6 +246,8 @@ LANGUAGE plpgsql;
 
 select *
 from results_analysis_hem('ss','skk','2011/1/1');
+select * from results_analysis_hematologist;
+
 -------------------------------------------------------------
 DROP FUNCTION IF EXISTS results_analysis_card(first_name_new varchar(80),last_name_new varchar(80), data_born date);
 CREATE OR REPLACE FUNCTION results_analysis_card(first_name_new varchar(80),last_name_new varchar(80), data_born date) RETURNS SETOF results_analysis_cardiologist  AS
@@ -345,50 +315,75 @@ exception
 end$$
 LANGUAGE plpgsql;
 ---------------------------ОСТАВЛЕННЫЕ ЗАПРОСЫ-----------------------------------------
+drop table if exists send;
 create table send(
     id serial ,
    first_name varchar(80),
    last_name varchar(80),
    commit varchar(300),
+   phone_number int,
    primary key (id,first_name,last_name)
 );
-CREATE OR REPLACE FUNCTION send_email(first_name_new varchar(80),last_name_new varchar(80), commit_n varchar(300)) RETURNS varchar  AS
+CREATE OR REPLACE FUNCTION send_email(first_name_new varchar(80),last_name_new varchar(80), commit_n varchar(300),phone int) RETURNS varchar  AS
 $$
 BEGIN
-    insert into send(first_name,last_name,commit)
-    values (first_name_new,last_name_new,commit_n);
+    insert into send(first_name,last_name,commit,phone_number)
+    values (first_name_new,last_name_new,commit_n,phone);
     return 'Succesfull';
 exception
     WHEN OTHERS THEN RETURN 'wrong';
 end$$
 LANGUAGE plpgsql;
-
-select *
-from send_email('ss','ss','sssssssssssssssssssssssssssssss');
-
-insert into send(id,first_name,last_name)
-    values ('ss','ss','sssssssssssssssssssssssssssssss');
-
-
-
-
-
-select *
-from patients;
-select *
-from links_Doctors_patients;
-
-select *
-from results_analysis_cardiologist;
-
-insert into results_analysis_cardiologist(id_patients_cardiologist, id_doctors_cardiologist, interval_PQ, interval_QRS, interval_QT)
-values (12,2,2,2,2);
-
-insert into results_analysis_surgeon(id_patients_surgeon, id_doctors_surgeon, pathology, general_state)
-values (8,4,'не обнаружено','здоров');
+-------------------ЛОГИНЫ и ПАРОЛИ---------------------------
+drop table if exists Logandpass;
+create table Logandpass(
+    id_pat int,
+    login varchar(30) not null unique ,
+    password int not null unique,
+    primary key(id_pat,login,password),
+    foreign key (id_pat) references Patients(serial_key)
+);
 
 
+--------------------Создание пароля и логина конкретному пациенту-------------------------
+drop function if exists new_user(new_login varchar(30),new_password int);
+CREATE OR REPLACE FUNCTION new_user(new_id int ,new_login varchar(30),new_password int) RETURNS integer AS
+$$
+BEGIN
+         INSERT INTO logandpass (id_pat,login, password)
+         VALUES (new_id,new_login,new_password);
+         return 1;
+exception
+    WHEN OTHERS THEN
+    RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+    return -1;
+end
+$$ LANGUAGE plpgsql;
 
+-------История Болезни-----------------------
+drop table if exists History cascade ;
+create table History(
+    id_pat int,
+    name varchar(80),
+    last_n varchar(80),
+    born_date date,
+    doctors varchar(80),
+    time date,
+    foreign key (id_pat) references Patients (serial_key)
+);
 
-
+---------------Просмотр истории болезни-----------------------------
+CREATE OR REPLACE FUNCTION view_history(first_name_new varchar(80),last_name_new varchar(80), data_born date) RETURNS SETOF History  AS
+$$
+BEGIN
+    RETURN QUERY
+        select * from history where name= first_name_new and last_n=last_name_new and born_date=data_born;
+exception
+    WHEN OTHERS THEN
+    RAISE NOTICE 'SQLSTATE: %', SQLSTATE;
+    RAISE NOTICE 'Illegal operation: %', SQLERRM;
+    RETURN;
+end$$
+LANGUAGE plpgsql;
 
