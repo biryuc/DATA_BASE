@@ -16,7 +16,7 @@ create table Doctors(
 insert into Doctors( first_name,last_name, specialty)
 values ('Ivanov','Ivan','therapist'),
        ('Pushnoi','Artem','cardiologist'),
-       ('Ulyanova','Maria','hematologist'),
+       ('Birychkov','Nikita','hematologist'),
        ('Smolnikov','Arseniy','surgeon'),
        ('Sergeev','Sergey','traumatologist'),
        ('Reshetnikov','Vadim','ophthalmologist');
